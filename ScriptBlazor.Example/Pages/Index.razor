@@ -1,0 +1,56 @@
+﻿@page "/"
+@using ScriptBlazor.LuaBlazor
+@using System.IO
+
+<h1>Lua Blazor</h1>
+
+<div class="row">
+    <div class="col-sm-6">
+        <div class="form-group">
+            <textarea @bind="_code" style="width:100%;height:400px;overflow:scroll;white-space:pre">@_code</textarea>
+        </div>
+        <div class="form-group">
+            <button class="btn btn-primary" @onclick="UpdateComponent">Update</button>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <LuaComponent LuaComponentObj="Component" />
+    </div>
+</div>
+
+@code {
+    private string _code = _initCode;
+    private CompiledLuaComponent Component = LuaBlazorCompiler.Compile(new StringReader(_initCode));
+
+    private void UpdateComponent()
+    {
+        try
+        {
+            Component = LuaBlazorCompiler.Compile(new StringReader(_code));
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+
+    private const string _initCode =
+@"@code
+local x = 0
+function self:test_func()
+    return ""Hello, Blazor!""
+end
+local function reset()
+    x = 0
+end
+end
+<div style=""height:250px;width:200px;border:solid 1px black;color:green;padding:20px"">
+    <div class=""p-2"">@self:test_func()</div>
+    <div class=""p-2"">x = @x</div>
+    <button class=""px-3 m-2 btn btn-primary"" @onclick=""function() x = x + 1 end"">+1</button>
+    <button class=""px-3 m-2 btn btn-primary"" @onclick=""function() x = x - 1 end"">-1</button>
+    @if (x % 2) == 0 then
+        <button class=""px-3 m-2 btn btn-warning"" @onclick=""reset"">RESET</button>
+    end
+</div>";
+}

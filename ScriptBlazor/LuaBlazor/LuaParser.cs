@@ -118,23 +118,26 @@ namespace ScriptBlazor.LuaBlazor
 
         private void FlushTextBuffer()
         {
-            TextCodeBuffer.AppendLine();
-            var str = TextCodeBuffer.ToString();
-            TextCodeBuffer.Clear();
-            var obj = new DelegateParsedObject()
+            if (TextCodeBuffer.Length > 0)
             {
-                Value = (ICodeGenerator g, int n, ref int s) =>
+                TextCodeBuffer.AppendLine();
+                var str = TextCodeBuffer.ToString();
+                TextCodeBuffer.Clear();
+                var obj = new DelegateParsedObject()
                 {
-                    g.WriteRaw(str);
-                },
-            };
-            if (TextBufferContainsExprStack[^1])
-            {
-                OutputExpr.Write(obj);
-            }
-            else
-            {
-                OutputFrag.Write(obj);
+                    Value = (ICodeGenerator g, int n, ref int s) =>
+                    {
+                        g.WriteRaw(str);
+                    },
+                };
+                if (TextBufferContainsExprStack[^1])
+                {
+                    OutputExpr.Write(obj);
+                }
+                else
+                {
+                    OutputFrag.Write(obj);
+                }
             }
         }
 

@@ -24,7 +24,11 @@ namespace ScriptBlazor.LuaBlazor
             var seq = 0;
             LuaBlazorCodeGenerator codeGen = new();
             recorder.ToParsedObject().WriteToOutput(codeGen, 0, ref seq);
-            
+
+            //Allow running on Blazor wasm.
+            Script.DefaultOptions.Stdin = new MemoryStream();
+            Script.DefaultOptions.Stdout = new MemoryStream();
+            Script.DefaultOptions.Stderr = new MemoryStream();
             return new(Script.RunString(codeGen.ToString()).Function);
         }
     }

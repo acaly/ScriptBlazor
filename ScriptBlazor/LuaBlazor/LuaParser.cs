@@ -74,7 +74,6 @@ namespace ScriptBlazor.LuaBlazor
                 TextCodeBuffer = sb,
             };
             parser.TextBufferContainsExprStack.Add(true);
-            parser.Tokenizer.MoveNext();
             parser.ParseMixedExpr();
             parser.FlushTextBuffer();
             return recorder.ToParsedObject();
@@ -92,7 +91,6 @@ namespace ScriptBlazor.LuaBlazor
                 TextCodeBuffer = sb,
             };
             parser.TextBufferContainsExprStack.Add(false);
-            parser.Tokenizer.MoveNext();
             parser.ParseMixedStatement();
             parser.FlushTextBuffer();
             return recorder.ToParsedObject();
@@ -111,7 +109,6 @@ namespace ScriptBlazor.LuaBlazor
                 TextCodeBuffer = sb,
             };
             parser.TextBufferContainsExprStack.Add(false);
-            parser.Tokenizer.MoveNext();
             parser.Block();
             parser.FlushTextBuffer();
             var ret = new CodeBlockParsedObject { Content = recorder.ToParsedObject() };
@@ -121,6 +118,7 @@ namespace ScriptBlazor.LuaBlazor
 
         private void FlushTextBuffer()
         {
+            TextCodeBuffer.AppendLine();
             var str = TextCodeBuffer.ToString();
             TextCodeBuffer.Clear();
             var obj = new DelegateParsedObject()

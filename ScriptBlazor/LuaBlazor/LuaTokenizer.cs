@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace ScriptBlazor.LuaBlazor
 {
+    //Lua 5.2 tokenizer to correctly handle Lua code.
     internal sealed class LuaTokenizer
     {
         public enum TokenType
@@ -66,6 +67,7 @@ namespace ScriptBlazor.LuaBlazor
         {
             _currentPeekLength = 0;
             (_currentCharType, _currentChar) = DoPeekChar(0);
+            EnsumeMoveNext();
         }
 
         private (TemplateTokenizer.TokenType t, char c) DoPeekChar(int pos)

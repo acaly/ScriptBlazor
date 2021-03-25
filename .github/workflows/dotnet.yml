@@ -1,0 +1,25 @@
+name: GitHubPages
+env:
+  PUBLISH_DIR: ScriptBlazor.Example/bin/publish
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+    - name: Publish
+      run: dotnet publish ScriptBlazor.Example -c Release -o PUBLISH_DIR
+    - name: GitHub Pages
+      if: success()
+      uses: crazy-max/ghaction-github-pages@v2.3.0
+      with:
+        build_dir: ${env.PUBLISH_DIR}/wwwroot

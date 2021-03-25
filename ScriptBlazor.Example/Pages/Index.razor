@@ -36,13 +36,13 @@
 
     private const string _initCode =
 @"@code
-local x = 0
-function self:test_func()
-    return ""Hello, Blazor!""
-end
-local function reset()
-    x = 0
-end
+    local x = 0
+    function self:test_func()
+        return ""Hello, Blazor!""
+    end
+    local function reset()
+        x = 0
+    end
 end
 <div style=""height:250px;width:200px;border:solid 1px black;color:green;padding:20px"">
     <div class=""p-2"">@self:test_func()</div>

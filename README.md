@@ -21,9 +21,9 @@ Although Blazor is a new and complicated technology, a razor component itself is
 This library compiles a code-mixed HTML file into a script that generates a function for the `BuildRenderTree`
 method of the `ComponentBase` class (the base class of all razor components).
 
-There is some basic abstraction in this library that theoretically allows one to make write razor components
-in any programming language. However, being an extremely simple, fast, and safe language, Lua is definitely
-the best option.
+There is some basic abstraction in this library that theoretically allows one, given a proper implementation,
+to write razor components in any programming language. However, being an extremely simple, fast, and safe language,
+Lua is definitely the best option.
 
 It depends on [MoonSharp](https://github.com/moonsharp-devs/moonsharp/) to run Lua on top of C# (even in wasm environment).
 
@@ -48,7 +48,9 @@ end
     <div class="p-2">x = @x</div>
     <button class="px-3 m-2 btn btn-primary" @onclick="function() x = x + 1 end">+1</button>
     <button class="px-3 m-2 btn btn-primary" @onclick="function() x = x - 1 end">-1</button>
-    <button class="px-3 m-2 btn btn-warning" @onclick="reset">RESET</button>
+    @if (x % 2) == 0 then
+        <button class="px-3 m-2 btn btn-warning" @onclick="reset">RESET</button>
+    end
 </div>
 ```
 The Lua code generated from it is similar to (added indentation)
@@ -97,12 +99,14 @@ return function()
         __builder0.AddMarkupContent(26, "1")
         __builder0.CloseElement()
         __builder0.AddMarkupContent(27, "\n    ")
-        __builder0.OpenElement(28, "button")
-        __builder0.AddAttribute(29, "class", "px-3 m-2 btn btn-warning")
-        __builder0.AddAttribute(30, "onclick", reset)
-        __builder0.AddMarkupContent(31, "RESET")
-        __builder0.CloseElement()
-        __builder0.AddMarkupContent(32, "\n")
+        if (x % 2) == 0 then
+            __builder0.OpenElement(28, "button")
+            __builder0.AddAttribute(29, "class", "px-3 m-2 btn btn-warning")
+            __builder0.AddAttribute(30, "onclick", reset)
+            __builder0.AddMarkupContent(31, "RESET")
+            __builder0.CloseElement()
+            __builder0.AddMarkupContent(32, "\n")
+        end
         __builder0.CloseElement()
     end
     return self

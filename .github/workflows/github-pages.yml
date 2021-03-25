@@ -1,4 +1,4 @@
-name: GitHubPages
+name: GitHub Pages
 env:
   PUBLISH_DIR: ScriptBlazor.Example/bin/publish
 
@@ -17,9 +17,9 @@ jobs:
       with:
         dotnet-version: 5.0.x
     - name: Publish
-      run: dotnet publish ScriptBlazor.Example -c Release -o PUBLISH_DIR
+      run: dotnet publish ScriptBlazor.Example -c Release -o ${{env.PUBLISH_DIR}}
     - name: GitHub Pages
       if: success()
       uses: crazy-max/ghaction-github-pages@v2.3.0
       with:
-        build_dir: ${env.PUBLISH_DIR}/wwwroot
+        build_dir: ${{env.PUBLISH_DIR}}/wwwroot

@@ -19,49 +19,43 @@
 </div>
 
 @code {
-    private LuaBlazorCompiler _compiler = new();
-    private CompiledLuaComponent Component;
+private LuaBlazorCompiler _compiler = new();
+private CompiledLuaComponent Component;
 
-    private string _code = _initCode;
+private string _code = _initCode;
 
-    protected override void OnInitialized()
+protected override void OnInitialized()
+{
+    _compiler.CodeGenerated += (sender, e) =>
     {
-        _compiler.CodeGenerated += (sender, e) =>
-        {
-            Console.WriteLine(e.Code);
-        };
-        Component = _compiler.Compile(new StringReader(_initCode));
-    }
+        Console.WriteLine(e.Code);
+    };
+    Component = _compiler.Compile(new StringReader(_initCode));
+}
 
-    private void UpdateComponent()
+private void UpdateComponent()
+{
+    try
     {
-        try
-        {
-            Component = _compiler.Compile(new StringReader(_code));
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-        }
+        Component = _compiler.Compile(new StringReader(_code));
     }
+    catch (Exception e)
+    {
+        Console.WriteLine(e);
+    }
+}
 
-    private const string _initCode =
+private const string _initCode =
 @"@code
-    local x = 0
-    function self:test_func()
-        return ""Hello, Blazor!""
-    end
-    local function reset()
-        x = 0
+    local x = @<p>Hello, Blazor!</p>
+    local y = function(i) return @<p>You clicked @i times!</p> end
+    local count = 0
+    local function onClick()
+        count = count + 1
     end
 end
-<div style=""height:250px;width:200px;border:solid 1px black;color:green;padding:20px"">
-    <div class=""p-2"">@self:test_func()</div>
-    <div class=""p-2"">x = @x</div>
-    <button class=""px-3 m-2 btn btn-primary"" @onclick=""function() x = x + 1 end"">+1</button>
-    <button class=""px-3 m-2 btn btn-primary"" @onclick=""function() x = x - 1 end"">-1</button>
-    @if (x % 2) == 0 then
-        <button class=""px-3 m-2 btn btn-warning"" @onclick=""reset"">RESET</button>
-    end
+<div style=""height:200px;width:200px;background:green;color:white;padding:20px"" @onclick=""onClick"">
+    @x
+    @y(count)
 </div>";
 }

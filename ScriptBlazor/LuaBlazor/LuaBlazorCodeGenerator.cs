@@ -9,6 +9,10 @@ namespace ScriptBlazor.LuaBlazor
 {
     public sealed class LuaBlazorCodeGenerator : ICodeGenerator
     {
+        //TODO should we allow non-string to be concatenated with a tostring() call?
+        //(We will need to decide after we differentiate string attributes and non-string attributes.)
+        private const bool AllowNonString = true;
+
         private readonly StringWriter _buildWriter = new();
         private readonly StringWriter _codeWriter = new();
         private StringWriter CurrentWriter => _isInCodeBlock ? _codeWriter : _buildWriter;
@@ -78,7 +82,7 @@ namespace ScriptBlazor.LuaBlazor
             }
             else
             {
-                CurrentWriter.Write(" + ");
+                CurrentWriter.Write(" .. ");
             }
             expr.WriteToOutput(this, nestLevel, ref sequence);
         }
@@ -95,9 +99,28 @@ namespace ScriptBlazor.LuaBlazor
             }
             else
             {
-                CurrentWriter.Write(" + ");
+                CurrentWriter.Write(" .. ");
             }
             WriteRaw($@"""{EscapeStringLiteral(stringLiteral)}""");
+        }
+
+        public void BeginExpressionList()
+        {
+            if (!_isInExpr)
+            {
+                throw new InvalidOperationException();
+            }
+            WriteRaw("(");
+            _isFirstExpr = true;
+        }
+
+        public void EndExpressionList()
+        {
+            if (!_isInExpr || _isFirstExpr)
+            {
+                throw new InvalidOperationException();
+            }
+            WriteRaw(")");
         }
 
         public void WriteContent(int nestLevel, ref int sequence, IParsedExpressionObject expr)
@@ -114,6 +137,10 @@ namespace ScriptBlazor.LuaBlazor
             _isInExpr = true;
             _isFirstExpr = true;
             expr.WriteToOutput(this, nestLevel, ref sequence);
+            if (!_isInExpr || _isFirstExpr)
+            {
+                throw new InvalidOperationException();
+            }
             _isInExpr = false;
             CurrentWriter.WriteLine(")");
         }
@@ -209,6 +236,10 @@ namespace ScriptBlazor.LuaBlazor
                 _isInExpr = true;
                 _isFirstExpr = true;
                 value.WriteToOutput(this, nestLevel + 1, ref sequence);
+                if (!_isInExpr || _isFirstExpr)
+                {
+                    throw new InvalidOperationException();
+                }
                 _isInExpr = false;
                 CurrentWriter.WriteLine(")");
             }

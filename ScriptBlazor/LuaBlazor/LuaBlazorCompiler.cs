@@ -8,9 +8,30 @@ using System.Threading.Tasks;
 
 namespace ScriptBlazor.LuaBlazor
 {
-    public static class LuaBlazorCompiler
+    public class CodeGeneratedEventArgs
     {
-        public static CompiledLuaComponent Compile(TextReader input)
+        public string Code { get; init; }
+    }
+
+    public class LuaBlazorCompiler
+    {
+        private readonly Script _script;
+        public event EventHandler<CodeGeneratedEventArgs> CodeGenerated;
+
+        public LuaBlazorCompiler(CoreModules modules = CoreModules.Preset_HardSandbox)
+        {
+            _script = new(modules)
+            {
+                Options =
+                {
+                    Stdin = Stream.Null,
+                    Stdout = Stream.Null,
+                    Stderr = Stream.Null,
+                },
+            };
+        }
+
+        public CompiledLuaComponent Compile(TextReader input)
         {
             PeekableTokenSequence tok = new(new TemplateTokenizer(input));
             FragmentRecorder recorder = new();
@@ -25,11 +46,14 @@ namespace ScriptBlazor.LuaBlazor
             LuaBlazorCodeGenerator codeGen = new();
             recorder.ToParsedObject().WriteToOutput(codeGen, 0, ref seq);
 
+            var luaCode = codeGen.ToString();
+            if (CodeGenerated is not null)
+            {
+                CodeGenerated(this, new() { Code = luaCode });
+            }
+
             //Allow running on Blazor wasm.
-            Script.DefaultOptions.Stdin = new MemoryStream();
-            Script.DefaultOptions.Stdout = new MemoryStream();
-            Script.DefaultOptions.Stderr = new MemoryStream();
-            return new(Script.RunString(codeGen.ToString()).Function);
+            return new(_script.DoString(luaCode).Function);
         }
     }
 }

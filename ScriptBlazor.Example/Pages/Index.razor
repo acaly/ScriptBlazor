@@ -19,14 +19,26 @@
 </div>
 
 @code {
+    private LuaBlazorCompiler _compiler = new();
+    private CompiledLuaComponent Component;
+    private LuaComponent _luaComponent;
+
     private string _code = _initCode;
-    private CompiledLuaComponent Component = LuaBlazorCompiler.Compile(new StringReader(_initCode));
+
+    protected override void OnInitialized()
+    {
+        _compiler.CodeGenerated += (sender, e) =>
+        {
+            Console.WriteLine(e.Code);
+        };
+        Component = _compiler.Compile(new StringReader(_initCode));
+    }
 
     private void UpdateComponent()
     {
         try
         {
-            Component = LuaBlazorCompiler.Compile(new StringReader(_code));
+            Component = _compiler.Compile(new StringReader(_code));
         }
         catch (Exception e)
         {

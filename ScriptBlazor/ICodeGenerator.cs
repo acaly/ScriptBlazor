@@ -14,6 +14,10 @@ namespace ScriptBlazor
 
         void WriteExpression(int nestLevel, ref int sequence, IParsedExpressionObject expr);
         void WriteExpression(string stringLiteral);
+        //If an expr is going to write a list of child exprs, code generator needs to be informed to allow
+        //correct expression concatenation.
+        void BeginExpressionList();
+        void EndExpressionList();
 
         void WriteContent(int nestLevel, ref int sequence, IParsedExpressionObject expr);
         void WriteMarkupContent(int nestLevel, int sequence, string str);

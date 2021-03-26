@@ -18,16 +18,18 @@ namespace ScriptBlazor
 
             public void WriteToOutput(ICodeGenerator writer, int nestLevel, ref int sequence)
             {
+                writer.BeginExpressionList();
                 foreach (var item in List)
                 {
                     item(writer, nestLevel, ref sequence);
                 }
+                writer.EndExpressionList();
             }
         }
 
         public void Write(IParsedExpressionObject obj)
         {
-            _list.Add((ICodeGenerator g, int n, ref int s) => obj.WriteToOutput(g, n, ref s));
+            _list.Add((ICodeGenerator g, int n, ref int s) => g.WriteExpression(n, ref s, obj));
         }
 
         public void Write(string stringLiteral)
@@ -35,13 +37,10 @@ namespace ScriptBlazor
             _list.Add((ICodeGenerator g, int n, ref int s) => g.WriteExpression(stringLiteral));
         }
 
-        public void WriteRaw(string raw)
-        {
-            _list.Add((ICodeGenerator g, int n, ref int s) => g.WriteRaw(raw));
-        }
-
         public IParsedExpressionObject ToParsedObject()
         {
+            //TODO _list must have at least 1 item, otherwise the expr concatenation will break.
+            //add an assert here
             return new MergedObject
             {
                 List = _list.ToArray(),

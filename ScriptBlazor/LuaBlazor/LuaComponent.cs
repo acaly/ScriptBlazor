@@ -44,7 +44,15 @@ namespace ScriptBlazor.LuaBlazor
             return new Dictionary<string, object>
             {
                 ["AddContent"] = (Action<int, object>)((sequence, val) => {
-                    builder.AddContent(sequence, val.ToString());
+                    if (val is Closure closure)
+                    {
+                        //Assuming it's a RenderFragment.
+                        builder.AddContent(sequence, builder1 => closure.Call(CreateBuilderTable(builder1)));
+                    }
+                    else
+                    {
+                        builder.AddContent(sequence, val.ToString());
+                    }
                 }),
                 ["AddMarkupContent"] = (Action<int, object>)((sequence, val) => {
                     builder.AddMarkupContent(sequence, val.ToString());

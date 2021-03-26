@@ -21,7 +21,7 @@ namespace ScriptBlazor.LuaBlazor
             }
         }
 
-        private class TagParsedObject : IParsedExpressionObject
+        private class TagParsedObject : IParsedExpressionObject, IParsedTemplateObject
         {
             public IParsedTemplateObject Tag { get; init; }
 
@@ -56,7 +56,7 @@ namespace ScriptBlazor.LuaBlazor
         private FragmentRecorder OutputFrag { get; init; }
         private ExpressionRecorder OutputExpr { get; init; }
         private StringBuilder TextCodeBuffer { get; init; }
-        private readonly List<bool> TextBufferContainsExprStack = new();
+        private readonly List<bool> TextBufferContainsExprStack = new(); //TODO do we need this stack?
 
         private LuaParser()
         {
@@ -148,6 +148,10 @@ namespace ScriptBlazor.LuaBlazor
                 Tokenizer.Detach();
                 FlushTextBuffer();
 
+                while (RawTokenizer.Current.Type == TemplateTokenizer.TokenType.Whitespace)
+                {
+                    RawTokenizer.EnsureMoveNext();
+                }
                 var rawContent = RawTokenizer.Current.Content;
                 if (rawContent.Length == 1 || rawContent[1] != '<')
                 {
@@ -163,7 +167,15 @@ namespace ScriptBlazor.LuaBlazor
                 HtmlFragmentParser.Instance.Parse(RawTokenizer, LuaCodeTokenFilter.Instance,
                     LuaCodeParser.Instance, tagRecorder);
 
-                OutputExpr.Write(new TagParsedObject { Tag = tagRecorder.ToParsedObject() });
+                var tagObj = new TagParsedObject { Tag = tagRecorder.ToParsedObject() };
+                if (TextBufferContainsExprStack[^1])
+                {
+                    OutputExpr.Write(tagObj);
+                }
+                else
+                {
+                    OutputFrag.Write(tagObj);
+                }
 
                 //Reconnect.
                 Tokenizer.Reset();
@@ -484,7 +496,7 @@ namespace ScriptBlazor.LuaBlazor
         {
             if (Tokenizer.Current == (LuaTokenizer.TokenType)'@')
             {
-                ParseLuaExpr();
+                ParseMixedExpr();
             }
             else
             {

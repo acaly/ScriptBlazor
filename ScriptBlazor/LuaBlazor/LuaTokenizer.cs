@@ -51,7 +51,15 @@ namespace ScriptBlazor.LuaBlazor
         private readonly StringBuilder _copyToOutput;
 
         private TokenType _current;
-        private int _currentPeekLength = 0;
+
+        //From _currentPeekBegin to _currentPeekEnd is the range of the current token (returned to
+        //parser, and stored in _current), waiting for processing from the parser (detach or MoveNext).
+        //_currentPeekBegin is needed because we may have skipped some comments before returning
+        //the current token. We should not write the comment to output (it's not controlled by parser).
+        //_currentChar is the char at _currentPeekEnd, i.e., the first char of next token, used by
+        //next MoveNext call. _currentCharType is its type.
+        private int _currentPeekBegin = 0;
+        private int _currentPeekEnd = 0;
         private char _currentChar;
         private TemplateTokenizer.TokenType _currentCharType;
 
@@ -63,10 +71,17 @@ namespace ScriptBlazor.LuaBlazor
             Reset();
         }
 
+        public void Detach()
+        {
+            //Skip _currentPeekBegin.
+            //This prevents comments before a tag to be rendered as content.
+            MoveSkipComments();
+        }
+
         public void Reset()
         {
-            _currentPeekLength = 0;
-            (_currentCharType, _currentChar) = DoPeekChar(0);
+            _currentPeekBegin = _currentPeekEnd = 0;
+            (_currentCharType, _currentChar) = PeekChar(0);
             EnsumeMoveNext();
         }
 
@@ -87,26 +102,26 @@ namespace ScriptBlazor.LuaBlazor
 
         private (TemplateTokenizer.TokenType t, char c) PeekChar(int pos)
         {
-            return DoPeekChar(_currentPeekLength + pos);
+            return DoPeekChar(_currentPeekEnd + pos);
         }
 
         private void CopyTextTokens(StringBuilder buffer)
         {
             int peek = 0;
-            int pos = _currentPeekLength;
+            int pos = _currentPeekEnd;
             while (_input.TryPeek(peek, out var templateToken))
             {
                 if (templateToken.Content.Length > pos)
                 {
                     //The first token is ensured to be Text.
                     buffer.Append(templateToken.Content[pos..]);
-                    _currentPeekLength += templateToken.Content.Length - pos;
+                    _currentPeekEnd += templateToken.Content.Length - pos;
 
                     while (_input.TryPeek(++peek, out templateToken) &&
                         templateToken.Type == TemplateTokenizer.TokenType.Text)
                     {
                         buffer.Append(templateToken.Content);
-                        _currentPeekLength += templateToken.Content.Length;
+                        _currentPeekEnd += templateToken.Content.Length;
                     }
 
                     (_currentCharType, _currentChar) = PeekChar(0);
@@ -119,22 +134,43 @@ namespace ScriptBlazor.LuaBlazor
 
         private char NextChar()
         {
-            ++_currentPeekLength;
+            ++_currentPeekEnd;
             (_currentCharType, _currentChar) = PeekChar(0);
             return _currentChar;
+        }
+
+        private void MoveSkipComments()
+        {
+            _currentPeekEnd -= _currentPeekBegin;
+            while (_currentPeekBegin > 0)
+            {
+                var inputTokenLen = _input.Current.Content.Length;
+                if (_currentPeekBegin < inputTokenLen)
+                {
+                    _input.SplitCurrent(_currentPeekBegin);
+                    _currentPeekBegin = 0;
+                    break;
+                }
+                _input.EnsureMoveNext();
+                _currentPeekBegin -= inputTokenLen;
+            }
         }
 
         public bool MoveNext()
         {
             //Consume input and copy content to output.
-            while (_currentPeekLength > 0)
-            {
-                if (_currentPeekLength <= _input.Current.Content.Length)
-                {
-                    _copyToOutput.Append(_input.Current.Content[.._currentPeekLength]);
 
-                    _input.SplitCurrent(_currentPeekLength);
-                    _currentPeekLength = 0;
+            //Skip _currentPeekBegin
+            MoveSkipComments();
+
+            while (_currentPeekEnd > 0)
+            {
+                if (_currentPeekEnd <= _input.Current.Content.Length)
+                {
+                    _copyToOutput.Append(_input.Current.Content[.._currentPeekEnd]);
+
+                    _input.SplitCurrent(_currentPeekEnd);
+                    _currentPeekEnd = 0;
                     if (!_input.MoveNext())
                     {
                         //No more input.
@@ -155,7 +191,7 @@ namespace ScriptBlazor.LuaBlazor
                     break;
                 }
                 _copyToOutput.Append(_input.Current.Content);
-                _currentPeekLength -= _input.Current.Content.Length;
+                _currentPeekEnd -= _input.Current.Content.Length;
                 _input.EnsureMoveNext();
             }
 
@@ -213,6 +249,7 @@ namespace ScriptBlazor.LuaBlazor
                         {
                             //Long comment.
                             ReadLongString(sep);
+                            _currentPeekBegin = _currentPeekEnd; //Set start position.
                             break;
                         }
                     }
@@ -221,6 +258,7 @@ namespace ScriptBlazor.LuaBlazor
                     {
                         NextChar();
                     }
+                    _currentPeekBegin = _currentPeekEnd; //Set start position.
                     break;
                 }
                 case '[': //long string or '['

@@ -145,6 +145,7 @@ namespace ScriptBlazor.LuaBlazor
         {
             if (Tokenizer.Current == (LuaTokenizer.TokenType)'@')
             {
+                Tokenizer.Detach();
                 FlushTextBuffer();
 
                 var rawContent = RawTokenizer.Current.Content;
@@ -183,6 +184,7 @@ namespace ScriptBlazor.LuaBlazor
         {
             if (Tokenizer.Current == (LuaTokenizer.TokenType)'<')
             {
+                Tokenizer.Detach();
                 FlushTextBuffer();
 
                 var tagRecorder = new FragmentRecorder();
